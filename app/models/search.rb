@@ -16,6 +16,6 @@ class Search < ApplicationRecord
   end
 
   def async_update
-    CallApiJob.perform_later(id)
+    CallApiJob.perform_now(id)
   end
 end
