@@ -11,7 +11,7 @@ class MovieInfoJob < ApplicationJob
           partial: "shared/cards/movie_card",
           locals: { movie: movie } }
       )
-      MovieRecommendationJob.perform_later(movie, query) if movie == movies.last
+      MovieRecommendationJob.perform_now(movie, query) if movie == movies.last
     end
   end
 end

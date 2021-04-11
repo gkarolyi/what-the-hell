@@ -16,6 +16,7 @@
                 </p>
 
         <% else %>
+    
                     <!-- if there already has been movie input -->
                     <div id="movie-card-section" data-cable-id="<%= params[:search][:queries] %>">
                         <%= render "shared/cards/movie_cards" %>
@@ -40,8 +41,13 @@
               <%= render 'shared/navigation/footer' %>
             <% end %>
 
+        <% MovieInfoJob.perform_later(@query) %>
+        <% CastMatcherJob.perform_later(@query) %>
+        
         <% end %>
+
     </div>
+
 
     <% if @query.empty? %>
         <div class="cover"></div>

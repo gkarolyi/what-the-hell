@@ -76,9 +76,6 @@ class SearchesController < ApplicationController
   def set_vars_from_params
     # @query [ "123", "1231", "123" ] is an array that stores the ids we need to use to call the api
     @query = user_params[:search][:queries].strip.split("&")
-    MovieInfoJob.perform_later(@query)
-    CastMatcherJob.perform_later(@query)
-    # MovieRecommendationJob is called from MovieInfoJob
   end
 
   def search_results(query)

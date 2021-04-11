@@ -10,7 +10,7 @@ module WhatTheHell
   class Application < Rails::Application
     # enable unobstrusive javascript
     config.action_view.embed_authenticity_token_in_remote_forms = true
-    config.active_job.queue_adapter = :sidekiq
+    # config.active_job.queue_adapter = :sidekiq
 
     config.generators do |generate|
       generate.assets false
