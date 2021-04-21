@@ -1,6 +1,3 @@
-#require_relative "../services/tmdb.rb"
-#require_relative "../services/movie_recommendation"
-
 class SearchesController < ApplicationController
   skip_before_action :authenticate_user!
 

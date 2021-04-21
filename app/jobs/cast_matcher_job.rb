@@ -11,7 +11,7 @@ class CastMatcherJob < ApplicationJob
     elsif query.count > 1 && actor_ids.count > 1
       # if we have 2 movie inputs and several matching actors
       broadcast_subtitle(common_actors: true)
-      actor_ids.map { |actor_id| Result.create(json: Tmdb.get_actor_details(actor_id)) }
+      actor_ids.map { |actor_id| Result.create(json: Tmdb.actor_details(actor_id)) }
                .each { |actor| broadcast(actor) }
     else
       # if there is only 1 movie input or no matching actors display preresults page
@@ -20,7 +20,7 @@ class CastMatcherJob < ApplicationJob
       else
         broadcast_subtitle({ common_actors: true }, common_actors: false)
       end
-      Tmdb.get_actors(query.last.to_i).each { |actor| broadcast(actor) }
+      Tmdb.top_actors(query.last.to_i).each { |actor| broadcast(actor) }
     end
   end
 

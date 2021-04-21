@@ -2,7 +2,7 @@ class MovieRecommendationJob < ApplicationJob
   queue_as :default
 
   def perform(movie, query)
-    recommendations = MovieRecommendation.get_movie_names(movie)
+    recommendations = MovieRecommendation.call(movie)
     return if recommendations["ERROR"]
 
     BroadcastJob.perform_now(
@@ -10,7 +10,7 @@ class MovieRecommendationJob < ApplicationJob
         query: query,
         partial: "shared/cards/movie_reco",
         locals:
-        { recommendations: Tmdb.movie_details_recom(recommendations),
+        { recommendations: Tmdb.recommendation_details(recommendations),
           base_movie: movie } }
     )
   end
