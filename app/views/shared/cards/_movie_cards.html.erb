@@ -1,5 +1,24 @@
 <div class="movie-card-container">
   <div id="movie-cards">
-    <%# content injected later by websockets %>
+    <% @movies.each do |movie| %>
+      
+      <div class="movie-card">
+    
+        <div class="movie-card__poster" >
+          <% if movie[:img_path] %>
+            <img src=<%= "https://image.tmdb.org/t/p/w200/#{movie[:img_path]}" %> >
+          <% else %>
+            <%= image_tag "placeholder.jpg", alt: "" %>
+          <% end %>
+        </div>
+        
+        <p class="movie-card__title">
+          <%= movie[:title] %>
+          (<%= movie[:year].first(4) %>)
+        </p>
+
+      </div>
+      
+    <% end %>
   </div>
 </div>

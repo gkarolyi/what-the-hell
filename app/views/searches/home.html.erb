@@ -1,3 +1,6 @@
+<% cast_thread = Thread.new { CastMatcher.call(@query) } %>
+<% movies_thread = Thread.new { MovieInfo.call(@query) } %>
+
 <div class="background-gradient">
 
     <div class="container container-home-page">
@@ -18,6 +21,8 @@
         <% else %>
     
                     <!-- if there already has been movie input -->
+                    <% @movies = movies_thread.value %>
+                    <% recommendations_thread = Thread.new { MovieRecommendation.call(@movies.last) } %>
                     <div id="movie-card-section" data-cable-id="<%= params[:search][:queries] %>">
                         <%= render "shared/cards/movie_cards" %>
                     </div>
@@ -28,14 +33,18 @@
                         <h2>Gathering your results...</h2>
                     </div>
                     
+                    <% @cast = cast_thread.value %>
                     <div id="cast-section" data-cable-id="<%= params[:search][:queries] %>">
                         <%= render 'shared/navigation/cast_loading' %>
                         <%= render 'shared/cards/cast_cards' %>
                     </div>
 
-                    <div id="movie-recommendation-section" data-cable-id="<%= params[:search][:queries] %>">
-                    <%# content will be injected through websocket %>
-                    </div>
+                    <% @recommendations = recommendations_thread.value %>
+                    <% if @recommendations %>
+                        <div id="movie-recommendation-section" data-cable-id="<%= params[:search][:queries] %>">
+                            <%= render 'shared/cards/movie_recommendations' %>
+                        </div>
+                    <% end %>
 
             <% if @query.count > 1 %>
               <%= render 'shared/navigation/footer' %>

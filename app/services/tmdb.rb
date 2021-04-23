@@ -1,98 +1,98 @@
 require "open-uri"
+require "benchmark"
 
 class Tmdb
-  @api_key = ENV['TMDB_KEY']
-
-  def self.get_actors(movie_id)
-    filtered = api_call_for_actors(movie_id)
-
-    top_actors = filtered.sort do |b, a|
-      a["popularity"] - b["popularity"]
+  class << self
+    def top_actors(movie_id, top_n = 4)
+      movie_cast(movie_id).sort { |b, a| a["popularity"] - b["popularity"] }
+                          .first(top_n)
     end
 
-    cast = []
-    top_actors.first(4).each { |actor| cast << Result.create(json: actor.to_json) }
+    def movie_details(movie_id)
+      details = read_and_parse(movie_url(movie_id))
+      important_details(details)
+    end
 
-    cast
-  end
+    def each_movie_details(array_of_movie_ids)
+      array_of_movie_ids.map do |id|
+        Thread.new do
+          movie_details(id)
+        end
+      end.map(&:value)
+    end
 
-  def self.get_movie_details(array_of_movie_ids)
-    movies = []
-    array_of_movie_ids.each do |movie_id|
-      movie_url = "https://api.themoviedb.org/3/movie/#{movie_id.to_i}?api_key=#{@api_key}&language=en-US"
-      movie_response = URI.parse(movie_url).read
-      movie_details = JSON.parse(movie_response)
+    def matching_cast(movie_ids)
+      movie_ids.last(2)
+               .map do |id|
+                 Thread.new do
+                   movie_cast(id.to_i).map { |actor| actor["id"] }
+                 end
+               end.map(&:value)
+               .reduce(&:&)
+    end
 
-      movies << {
-        title: movie_details["title"],
-        img_path: movie_details["poster_path"],
-        year: movie_details["release_date"]
+    def actor_details(actor_id)
+      url = "https://api.themoviedb.org/3/person/#{actor_id}?#{api_params}"
+      read_and_parse(url)
+    rescue OpenURI::HTTPError
+      actor_not_found
+    end
+
+    def movie_cast(movie_id)
+      url = "https://api.themoviedb.org/3/movie/#{movie_id}/credits?#{api_params}"
+      cast = read_and_parse(url)["cast"]
+      cast.select { |c| c["known_for_department"] == "Acting" }
+    end
+
+    def search_actor_name(query)
+      url = "https://api.themoviedb.org/3/search/person?#{api_params}&query=#{query}&page=1"
+      actor_id = read_and_parse(url)['results'][0]['id']
+      actor_details(actor_id)
+    end
+
+    def recommendation_details(recommendations)
+      recommendations.first(3).map do |rec|
+        Thread.new do
+          url = movie_search_url(rec)
+          details = read_and_parse(url)['results'].first
+          important_details(details)
+        end
+      end.map(&:value)
+    end
+
+    private
+
+    def key
+      ENV['TMDB_KEY']
+    end
+
+    def api_params
+      "api_key=#{key}&language=en-US&include_adult=false"
+    end
+
+    def movie_url(movie_id)
+      "https://api.themoviedb.org/3/movie/#{movie_id.to_i}?#{api_params}"
+    end
+
+    def movie_search_url(query)
+      "https://api.themoviedb.org/3/search/movie?#{api_params}&query=#{query}"
+    end
+
+    def read_and_parse(url)
+      JSON.parse(URI.parse(url).read)
+    end
+
+    def important_details(hash)
+      {
+        title: hash["title"],
+        img_path: hash["poster_path"],
+        description: hash["overview"],
+        year: hash["release_date"]
       }
     end
-    # returns array of hashes with movie details
-    movies
-  end
 
-  def self.matching_cast(array_of_movie_ids)
-    # get cast to have 2 arrays with [ actor, actor, actr, ...]
-    # arr-o-m-i ["1232", '1232']
-    array_of_movie_ids = array_of_movie_ids.last(2)
-    first_movie_id = array_of_movie_ids.first
-    first_movie_actors_ids = api_call_for_actors(first_movie_id.to_i).map { |actor| actor["id"] }
-
-    return first_movie_actors_ids if array_of_movie_ids.one?
-
-    second_movie_id = array_of_movie_ids[1]
-    second_movie_actors_ids = api_call_for_actors(second_movie_id.to_i).map { |actor| actor["id"] }
-
-    first_movie_actors_ids & second_movie_actors_ids
-  end
-
-  def self.get_actor_details(actor_id)
-    actor_id = actor_id.to_s if actor_id.is_a? Integer
-    # takes an actor ID and returns the JSON response
-    url = "https://api.themoviedb.org/3/person/#{actor_id}?api_key=#{@api_key}&language=en-US&include_adult=false"
-    begin
-      URI.parse(url).read
-    rescue
-      self.actor_not_found
+    def actor_not_found
+      { name: "NOT FOUND" }
     end
-  end
-
-  def self.api_call_for_actors(movie_id)
-    actors_url = "https://api.themoviedb.org/3/movie/#{movie_id}/credits?api_key=#{@api_key}&language=en-US"
-
-    actors_response = URI.parse(actors_url).read
-    actors = JSON.parse(actors_response)["cast"]
-    actors.select do |actor|
-      actor["known_for_department"] == "Acting"
-    end
-  end
-
-  def self.actor_not_found
-    "{\"adult\":\"\",\"also_known_as\":\"\",\"biography\":\"\",\"birthday\":\"\",\"deathday\":\"\",\"gender\":\"\",\"homepage\":\"\",\"id\":\"\",\"imdb_id\":\"\",\"known_for_department\":\"\",\"name\":\"NOT FOUND\",\"place_of_birth\":\"\",\"popularity\":\"\",\"profile_path\":\"\"}"
-  end
-
-  def self.search_actor_name(query)
-    query = URI.encode(query)
-    url = "https://api.themoviedb.org/3/search/person?api_key=#{@api_key}&language=en-US&query=#{query}&page=1&include_adult=false"
-    actor_id = JSON.parse(URI.parse(url).read)['results'][0]['id']
-    self.get_actor_details(actor_id)
-  end
-
-  def self.movie_details_recom(hash_with_movie_names)
-    movies = []
-    hash_with_movie_names.first(3).each do |_key, movie|
-      url = "https://api.themoviedb.org/3/search/movie?api_key=#{@api_key}&query=#{movie}"
-      response = URI.parse(url).read
-      movie_details = JSON.parse(response)['results'].first
-      movies << {
-        title: movie_details["title"],
-        img_path: movie_details["poster_path"],
-        description: movie_details["overview"],
-        year: movie_details["release_date"]
-      }
-    end
-    movies
   end
 end

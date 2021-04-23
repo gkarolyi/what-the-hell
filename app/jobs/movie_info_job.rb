@@ -3,7 +3,7 @@ class MovieInfoJob < ApplicationJob
 
   def perform(query)
     sleep 0.5
-    movies = Tmdb.get_movie_details(query)
+    movies = Tmdb.each_movie_details(query)
     movies.each do |movie|
       BroadcastJob.perform_now(
         { channel: "MovieInfo",
