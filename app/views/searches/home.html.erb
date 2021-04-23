@@ -19,6 +19,7 @@
                 </p>
 
         <% else %>
+    
                     <!-- if there already has been movie input -->
                     <% @movies = movies_thread.value %>
                     <% recommendations_thread = Thread.new { MovieRecommendation.call(@movies.last) } %>
@@ -49,8 +50,13 @@
               <%= render 'shared/navigation/footer' %>
             <% end %>
 
+        <% MovieInfoJob.perform_later(@query) %>
+        <% CastMatcherJob.perform_later(@query) %>
+        
         <% end %>
+
     </div>
+
 
     <% if @query.empty? %>
         <div class="cover"></div>

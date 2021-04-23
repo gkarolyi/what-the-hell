@@ -24,8 +24,8 @@ gem 'redis', '~> 4.0'
 gem 'cloudinary', '~> 1.16.0'
 
 # Use sidekiq
-gem 'sidekiq'
-gem 'sidekiq-failures', '~> 1.0'
+# gem 'sidekiq'
+# gem 'sidekiq-failures', '~> 1.0'
 
 # Use Active Storage variant
 # gem 'image_processing', '~> 1.2'
