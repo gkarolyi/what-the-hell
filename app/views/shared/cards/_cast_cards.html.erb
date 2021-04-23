@@ -1,5 +1,24 @@
 <div class="actor-card-container">
   <div id="actor-cards">
-    <%# content injected later by websockets %>
+    <% @cast.each do |actor| %>
+
+      <%#= link_to result_path(actor) do %>
+        
+        <div class="actor-card-category">
+
+          <% if actor['profile_path'] %>
+            <% img_url = "https://image.tmdb.org/t/p/w200/#{actor['profile_path']}" %>
+            <img class="actor-card-img" src=<%= img_url %> >
+          <% else %>
+            <%= image_tag "placeholder.jpg", alt: "", class: 'actor-card-img' %>
+          <% end %>
+
+          <div class="actor-card-title"><%= actor["name"]%></div>
+
+        </div>
+
+      <%# end %>
+
+    <% end %>
   </div>
 </div>

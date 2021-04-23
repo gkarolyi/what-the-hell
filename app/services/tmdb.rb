@@ -6,12 +6,10 @@ class Tmdb
     def top_actors(movie_id, top_n = 4)
       movie_cast(movie_id).sort { |b, a| a["popularity"] - b["popularity"] }
                           .first(top_n)
-                          .map { |actor| Result.create(json: actor.to_json) }
     end
 
     def movie_details(movie_id)
-      response = URI.parse(movie_url(movie_id)).read
-      details = JSON.parse(response)
+      details = read_and_parse(movie_url(movie_id))
       important_details(details)
     end
 
@@ -26,38 +24,37 @@ class Tmdb
     def matching_cast(movie_ids)
       movie_ids.last(2)
                .map do |id|
-                 movie_cast(id.to_i).map { |actor| actor["id"] }
-               end
+                 Thread.new do
+                   movie_cast(id.to_i).map { |actor| actor["id"] }
+                 end
+               end.map(&:value)
                .reduce(&:&)
     end
 
     def actor_details(actor_id)
       url = "https://api.themoviedb.org/3/person/#{actor_id}?#{api_params}"
-      begin
-        URI.parse(url).read
-      rescue OpenURI::HTTPError
-        actor_not_found
-      end
+      read_and_parse(url)
+    rescue OpenURI::HTTPError
+      actor_not_found
     end
 
     def movie_cast(movie_id)
       url = "https://api.themoviedb.org/3/movie/#{movie_id}/credits?#{api_params}"
-      response = URI.parse(url).read
-      cast = JSON.parse(response)["cast"]
+      cast = read_and_parse(url)["cast"]
       cast.select { |c| c["known_for_department"] == "Acting" }
     end
 
     def search_actor_name(query)
       url = "https://api.themoviedb.org/3/search/person?#{api_params}&query=#{query}&page=1"
-      actor_id = JSON.parse(URI.parse(url).read)['results'][0]['id']
+      actor_id = read_and_parse(url)['results'][0]['id']
       actor_details(actor_id)
     end
 
     def recommendation_details(recommendations)
       recommendations.first(3).map do |rec|
         Thread.new do
-          response = URI.parse(movie_search_url(rec[1])).read
-          details = JSON.parse(response)['results'].first
+          url = movie_search_url(rec)
+          details = read_and_parse(url)['results'].first
           important_details(details)
         end
       end.map(&:value)
@@ -81,6 +78,10 @@ class Tmdb
       "https://api.themoviedb.org/3/search/movie?#{api_params}&query=#{query}"
     end
 
+    def read_and_parse(url)
+      JSON.parse(URI.parse(url).read)
+    end
+
     def important_details(hash)
       {
         title: hash["title"],
@@ -91,7 +92,7 @@ class Tmdb
     end
 
     def actor_not_found
-      { name: "NOT FOUND" }.to_json
+      { name: "NOT FOUND" }
     end
   end
 end

@@ -13,7 +13,7 @@ class FaceRecognitionJob < ApplicationJob
     )
     response = ApplicationController.renderer.render_to_string(
       partial: "shared/views/final_result",
-      locals: { result: result },
+      locals: { result: result }
     )
     ActionCable.server.broadcast("FaceRecognition_result_#{result.id}", { response: response })
   end

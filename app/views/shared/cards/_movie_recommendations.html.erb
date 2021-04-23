@@ -1,8 +1,8 @@
 <div class="reco-container">
    <H2>HAVE YOU WATCHED THESE YET?</H2>
-      <p>If you liked <%= base_movie[:title] %>, you might also love these movies we hand-picked for you:</p>
+      <p>If you liked <%= @movies.last[:title] %>, you might also love these movies we hand-picked for you:</p>
       <div class="img-wrapper">
-        <% recommendations.each do |movie| %>
+        <% @recommendations.each do |movie| %>
           <% if movie[:img_path] %>
             <div class="reco-poster" data-rec-title=<%= movie[:title].to_json.html_safe %> data-rec-description=<%= movie[:description].to_json.html_safe %> data-rec-year=<%= movie[:year].to_json.html_safe %>>
               <img src=<%= "https://image.tmdb.org/t/p/w200/#{movie[:img_path]}" %> >
